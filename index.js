@@ -40,7 +40,10 @@ class Particles {
         this.dx = 0;
         this.dy = 0;
         this.runBack = false;
-        this.runBack2 = false;
+        // this.runBack2 = false;
+        this.friction = Math.random() * 0.05 + 0.94;
+        this.vx = 0;
+        this.vy = 0;
     }
 
     draw() {
@@ -57,16 +60,12 @@ class Particles {
 
         if (mouseDistance <= mousePos.radius) {
             this.runBack = false;
-            this.runback2 = false;
             let deltaX = mousePos.x - this.x;
             let deltaY = mousePos.y - this.y;
             let directionX;
             let directionY;
-
             let totalDistance = (10 / this.size) * mousePos.radius;
             let P1x = (totalDistance * -deltaX) / mouseDistance + mousePos.x;
-            // this.baseX2 = this.baseX - (P1x - this.baseX) / 3;
-            // this.baseY2 = this.baseY + (this.baseX2 - this.baseX) * (deltaY / deltaX);
             this.movingPath = Math.abs(P1x - this.x);
             let times = Math.random() * 0.5 + 1;
             let vx = this.movingPath / (times * 60);
@@ -82,58 +81,24 @@ class Particles {
 
         if (this.movingPath <= 0) {
             this.movingPath = 0;
-            let xToBase = this.baseX - this.x;
-            let yToBase = this.baseY - this.y;
-            let xToBase2 = this.baseX2 - this.x;
-            let yToBase2 = this.baseY2 - this.y;
-            if (this.runBack2 === false && this.runBack === false) {
-                // console.log('set');
+            if (this.runBack === false) {
                 this.dx = 0;
                 this.dy = 0;
-                //cal this.baseX2, this.baseX1
-                let vectorX = this.baseX - this.x;
-                let vectorY = this.baseY - this.y;
-                this.baseX2 = this.x + (vectorX * 8) / 7;
-                this.baseY2 = this.y + (vectorY * 8) / 7;
-                this.runBack2 = true;
-            }
-
-            if (this.runBack2 === true && this.runBack === false) {
-                if (mouseDistance >= mousePos.radius && (Math.abs(xToBase2) >= 0.5 || Math.abs(yToBase2) >= 0.5)) {
-                    let vx = xToBase2 / 60;
-                    let vy = yToBase2 / 60;
-                    this.dx = vx * 2;
-                    this.dy = vy * 2;
-                }
-            }
-
-            if (
-                Math.abs(xToBase2) < 0.5 &&
-                Math.abs(yToBase2) < 0.5 &&
-                this.runBack2 === true &&
-                this.runBack === false
-            ) {
-                this.dx = 0;
-                this.dy = 0;
-                this.runBack2 = false;
                 this.runBack = true;
             }
-
-            if (this.runBack2 === false && this.runBack === true) {
-                if (mouseDistance >= mousePos.radius && (Math.abs(xToBase) >= 0.5 || Math.abs(yToBase) >= 0.5)) {
+            if (this.runBack === true) {
+                if (mouseDistance >= mousePos.radius) {
                     let deltaBaseX = this.baseX - this.x;
                     let deltaBaseY = this.baseY - this.y;
-                    let vx = deltaBaseX / 60;
-                    let vy = deltaBaseY / 60;
-                    this.dx = vx * 3;
-                    this.dy = vy * 3;
+                    let vx = deltaBaseX / 1000;
+                    let vy = deltaBaseY / 1000;
+                    this.vx += vx * this.size * Math.sin(45) * 2;
+                    this.vy += vy * this.size * Math.cos(45) * 3;
+                    this.vx *= this.friction;
+                    this.vy *= this.friction;
+                    this.dx = this.vx;
+                    this.dy = this.vy;
                 }
-                // if (mouseDistance >= mousePos.radius && (Math.abs(xToBase) < 0.5 || Math.abs(yToBase) < 0.5)) {
-                //     this.x = this.baseX;
-                //     this.y = this.baseY;
-                //     this.dx = 0;
-                //     this.dy = 0;
-                // }
             }
         }
 
@@ -144,6 +109,8 @@ class Particles {
         } else if (this.movingPath > Math.abs(this.dx)) {
             this.movingPath -= Math.abs(this.dx);
         }
+        let movingPath = this.movingPath;
+        console.log({ movingPath });
         this.draw();
     }
 }
@@ -154,7 +121,7 @@ const init = (datax) => {
             let opIndex = 3 + x * 4 + y * 4 * canvas.width;
             let r = datax[opIndex - 3];
             let g = datax[opIndex - 2];
-            b = datax[opIndex - 1];
+            let b = datax[opIndex - 1];
             let index2 = (opIndex - 3) / 4;
             if ((r !== 0 || g !== 0 || b !== 0) && index2 % 100 == 1) {
                 parcsArr.push(new Particles(x, y));
@@ -182,10 +149,10 @@ init(data);
 
 window.addEventListener('resize', () => {
     canvas.width = window.innerWidth;
-
     canvas.height = window.innerHeight;
 });
 
+////////////////////////////////////////////////////////////
 // let checkedParcs = [];
 // let remainingParcs = [];
 // ctx.arc(mousePos.x, mousePos.y, mousePos.radius, 0, Math.PI * 2);
