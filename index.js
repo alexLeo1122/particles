@@ -31,6 +31,7 @@ class Particles {
         this.y = y;
         this.baseX = x;
         this.baseY = y;
+        this.baseR = 0;
         this.baseX2 = 0;
         this.baseY2 = 0;
         this.size = Math.random() * 2 + 3;
@@ -41,9 +42,28 @@ class Particles {
         this.dy = 0;
         this.runBack = false;
         // this.runBack2 = false;
-        this.friction = Math.random() * 0.05 + 0.94;
+        this.friction = 0.99 - this.size / 200;
         this.vx = 0;
         this.vy = 0;
+        this.prevX = 0;
+        this.prevY = 0;
+        this.pointB = {
+            x: 0,
+            y: 0,
+        };
+        this.baseTangent = 0;
+        this.c1 = {
+            x: 0,
+            y: 0,
+            tangent: 0,
+        };
+        this.c2 = {
+            x: 0,
+            y: 0,
+            tangent: 0,
+        };
+        this.pathRun = 0;
+        this.dtangent = Math.PI / 360;
     }
 
     draw() {
@@ -59,6 +79,7 @@ class Particles {
         );
 
         if (mouseDistance <= mousePos.radius) {
+            this.pathRun = Math.floor(Math.random() * 2 + 1);
             this.runBack = false;
             let deltaX = mousePos.x - this.x;
             let deltaY = mousePos.y - this.y;
@@ -67,7 +88,7 @@ class Particles {
             let totalDistance = (10 / this.size) * mousePos.radius;
             let P1x = (totalDistance * -deltaX) / mouseDistance + mousePos.x;
             this.movingPath = Math.abs(P1x - this.x);
-            let times = Math.random() * 0.5 + 1;
+            let times = Math.random() * 0.5 + 2;
             let vx = this.movingPath / (times * 60);
             if (deltaX > 0) {
                 directionX = vx;
@@ -88,16 +109,74 @@ class Particles {
             }
             if (this.runBack === true) {
                 if (mouseDistance >= mousePos.radius) {
-                    let deltaBaseX = this.baseX - this.x;
-                    let deltaBaseY = this.baseY - this.y;
-                    let vx = deltaBaseX / 1000;
-                    let vy = deltaBaseY / 1000;
-                    this.vx += vx * this.size * Math.sin(45) * 2;
-                    this.vy += vy * this.size * Math.cos(45) * 3;
-                    this.vx *= this.friction;
-                    this.vy *= this.friction;
-                    this.dx = this.vx;
-                    this.dy = this.vy;
+                    // let deltaBaseX = this.baseX - this.x;
+                    // let deltaBaseY = this.baseY - this.y;
+                    // let vx = deltaBaseX / 1000;
+                    // let vy = deltaBaseY / 1000;
+                    // this.vx += vx * this.size * Math.sin(45) * 2;
+                    // this.vy += vy * this.size * Math.cos(45) * 3;
+                    // this.vx *= this.friction;
+                    // this.vy *= this.friction;
+                    // this.dx = this.vx;
+                    // this.dy = this.vy;
+                    //lay diem doi xung
+                    this.pointB.x = 2 * this.baseX - this.x;
+                    this.pointB.y = 2 * this.baseY - this.y;
+                    this.baseR = Math.sqrt(
+                        (this.x - this.baseX) * (this.x - this.baseX) + (this.y - this.baseY) * (this.y - this.baseY),
+                    );
+                    this.baseTangent = Math.atan2(this.y - this.baseY, this.x - this.baseX);
+
+                    // this.c2.x = 1.5 * this.baseR * Math.cos(this.baseTangent + Math.PI / 2) + this.baseX;
+                    // this.c2.y = 1.5 * this.baseR * Math.sin(this.baseTangent + Math.PI / 2) + this.baseY;
+
+                    this.c1.x = 1.5 * this.baseR * Math.cos(this.baseTangent + Math.PI / 2) + this.baseX;
+                    this.c1.y = 1.5 * this.baseR * Math.sin(this.baseTangent + Math.PI / 2) + this.baseY;
+                    this.c2.x = 2 * this.baseX - this.c1.x;
+                    this.c2.y = 2 * this.baseY - this.c1.y;
+                    this.c1.tangent = Math.atan2(this.y - this.c1.y, this.x - this.c1.x);
+                    this.c1.r = Math.sqrt(
+                        (this.x - this.c1.x) * (this.x - this.c1.x) + (this.y - this.c1.y) * (this.y - this.c1.y),
+                    );
+                    this.c2.r = this.c1.r;
+                    // ctx.arc(this.c1.x, this.c1.y, 5, 0, Math.PI * 2);
+                    // ctx.fill();
+                    this.c2.tangent = Math.atan2(this.y - this.c2.y, this.x - this.c2.x);
+
+                    // if (distanceToB >= 1) {
+                    if (this.pathRun == 1) {
+                        this.prevX = this.x;
+                        this.prevY = this.y;
+                        this.c1.tangent -= this.dtangent;
+                        let X = this.c1.x + Math.cos(this.c1.tangent) * this.c1.r;
+                        let Y = this.c1.y + Math.sin(this.c1.tangent) * this.c1.r;
+                        let deltaX = (X - this.prevX) / (this.size * 10); // / 50 / (this.size / 2);
+                        let deltaY = (Y - this.prevY) / (this.size * 10); // / 50 / (this.size / 2);
+                        this.vx += deltaX;
+                        this.vy += deltaY;
+                        this.vx *= this.friction;
+                        this.vy *= this.friction;
+                        this.dx = this.vx;
+                        this.dy = this.vy;
+                    }
+
+                    //c2(right) road
+                    if (this.pathRun == 2) {
+                        this.prevX = this.x;
+                        this.prevY = this.y;
+                        this.c2.tangent += this.dtangent;
+                        let X = this.c2.x + Math.cos(this.c2.tangent) * this.c2.r;
+                        let Y = this.c2.y + Math.sin(this.c2.tangent) * this.c2.r;
+                        let deltaX = (X - this.prevX) / (this.size * 10); // / 50 / (this.size / 2);
+                        let deltaY = (Y - this.prevY) / (this.size * 10); /// 50 / (this.size / 2);
+                        this.vx += deltaX;
+                        this.vy += deltaY;
+                        this.vx *= this.friction;
+                        this.vy *= this.friction;
+                        this.dx = this.vx;
+                        this.dy = this.vy;
+                    }
+                    // }
                 }
             }
         }
